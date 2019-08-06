@@ -73,6 +73,9 @@ static bool isMuxBus(size_t bus)
 
 static int isDevice16Bit(int file)
 {
+#ifdef USE_16BIT_ADDR
+    return 1;
+#endif
     /* Get first byte */
     int byte1 = i2c_smbus_read_byte_data(file, 0);
     if (byte1 < 0)
@@ -108,6 +111,20 @@ static int read_block_data(int flag, int file, uint16_t offset, uint8_t len,
         return i2c_smbus_read_i2c_block_data(file, low_addr, len, buf);
     }
 
+#ifdef USE_16BIT_ADDR
+    int ret = i2c_smbus_write_byte_data(file, high_addr, low_addr);
+    if (ret < 0)
+    {
+        return ret;
+    }
+    for (int i = 0; i < len; i++) {
+		ret = i2c_smbus_read_byte(file);
+        if (ret < 0)
+            return ret;
+        buf[i] = static_cast<uint8_t>(ret);
+    }
+    return ret;
+#else
     /* This is for 16 bit addressing EEPROM device. First an offset
      * needs to be written before read data from a offset
      */
@@ -118,6 +135,7 @@ static int read_block_data(int flag, int file, uint16_t offset, uint8_t len,
     }
 
     return i2c_smbus_read_i2c_block_data(file, high_addr, len, buf);
+#endif
 }
 
 bool validateHeader(const std::array<uint8_t, I2C_SMBUS_BLOCK_MAX>& blockData)

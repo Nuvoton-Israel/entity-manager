@@ -36,6 +36,7 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-rtti")
 
 option (YOCTO "Enable Building in Yocto" OFF)
 option (USE_OVERLAYS "Enable Overlay Usage" ON)
+option (USE_16BIT_ADDR "EEPROM address is 16bits" ON)
 
 if (NOT YOCTO)
     externalproject_add (
@@ -128,6 +129,11 @@ if (USE_OVERLAYS) # overlays can be disabled because they require a kernel patch
                   # as of today
     target_compile_definitions (entity-manager PRIVATE OVERLAYS=1)
 endif ()
+
+target_compile_definitions (
+    fru-device PRIVATE
+    $<$<BOOL:${USE_16BIT_ADDR}>: -DUSE_16BIT_ADDR>
+)
 
 if (NOT YOCTO)
     add_dependencies (entity-manager nlohmann-json)
